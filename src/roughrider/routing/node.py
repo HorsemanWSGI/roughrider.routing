@@ -4,6 +4,7 @@ from horseman.meta import Overhead, APINode
 from horseman.http import HTTPError
 from horseman.util import view_methods
 from horseman.prototyping import Environ, WSGICallable
+from roughrider.routing.route import add_route
 
 
 class RoutingNode(APINode):
