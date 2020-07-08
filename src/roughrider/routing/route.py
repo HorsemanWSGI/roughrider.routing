@@ -1,5 +1,6 @@
 import inspect
 from horseman.meta import View, APIView
+from horseman.util import view_methods
 
 
 def subroute(func=None, path: str=None, methods: list=None):
