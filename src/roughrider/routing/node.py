@@ -21,6 +21,7 @@ class RoutingNode(APINode):
         methods, params = self.routes.match(path_info)
         if methods is None:
             return None
+        environ['horseman.path.params'] = params
         endpoint = methods.get(environ['REQUEST_METHOD'])
         if endpoint is None:
             raise HTTPError(HTTPStatus.METHOD_NOT_ALLOWED)
