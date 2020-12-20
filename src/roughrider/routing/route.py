@@ -43,7 +43,7 @@ class Routes(autoroutes.Routes):
                 f"No route found with name {name} and params {params}")
 
     @staticmethod
-    def payload(view, methods: HTTPMethods=None) \
+    def payload(view, methods: HTTPMethods = None) \
             -> Generator[Tuple[HTTPMethod, Endpoint], None, None]:
         if inspect.isclass(view):
             inst = view()
@@ -51,7 +51,7 @@ class Routes(autoroutes.Routes):
                 assert methods is None
                 members = inspect.getmembers(
                     inst, predicate=(lambda x: inspect.ismethod(x)
-                                     and  x.__name__ in METHODS))
+                                     and x.__name__ in METHODS))
                 for name, func in members:
                     yield name, func
             else:
@@ -64,7 +64,7 @@ class Routes(autoroutes.Routes):
             for method in methods:
                 yield method, view
 
-    def register(self, path: str, methods: HTTPMethods=None, **extras):
+    def register(self, path: str, methods: HTTPMethods = None, **extras):
         def routing(view):
             name = extras.pop("name", view.__name__.lower())
             if name in self._registry:
