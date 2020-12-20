@@ -1,7 +1,6 @@
-import collections
 import inspect
 import re
-from typing import Callable, Generator, List, Literal, NamedTuple, Tuple
+from typing import Callable, Generator, List, NamedTuple, Tuple
 from http import HTTPStatus
 
 import autoroutes
