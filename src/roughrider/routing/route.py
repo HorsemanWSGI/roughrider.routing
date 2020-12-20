@@ -1,23 +1,23 @@
 import collections
 import inspect
 import re
-from typing import NamedTuple, Literal, List, Generator, Optional
+from typing import Callable, Generator, List, Literal, NamedTuple, Tuple
 from http import HTTPStatus
 
 import autoroutes
 from horseman.definitions import METHODS
-from horseman.prototyping import Overhead, WSGICallable
-from horseman.meta import APIView
+from horseman.prototyping import WSGICallable, HTTPMethod
+from horseman.meta import Overhead, APIView
 from horseman.http import HTTPError
-from horseman.util import view_methods
 
 
 Endpoint = Callable[[Overhead], WSGICallable]
+HTTPMethods = List[HTTPMethod]
 
 
 class Route(NamedTuple):
     path: str
-    method: Literal[*METHODS]
+    method: HTTPMethod
     endpoint: Endpoint
     params: dict
     extras: dict
@@ -43,7 +43,8 @@ class Routes(autoroutes.Routes):
                 f"No route found with name {name} and params {params}")
 
     @staticmethod
-    def payload(view, methods: list=None) -> Generator[Tuple[str, Endpoint]]:
+    def payload(view, methods: HTTPMethods=None) \
+            -> Generator[Tuple[HTTPMethod, Endpoint], None, None]:
         if inspect.isclass(view):
             inst = view()
             if isinstance(inst, APIView):
@@ -63,7 +64,7 @@ class Routes(autoroutes.Routes):
             for method in methods:
                 yield method, view
 
-    def register(self, path: str, methods: list=None, **extras):
+    def register(self, path: str, methods: HTTPMethods=None, **extras):
         def routing(view):
             name = extras.pop("name", view.__name__.lower())
             if name in self._registry:
@@ -74,7 +75,7 @@ class Routes(autoroutes.Routes):
                         f"Route with name {name} already exists: {ref}.")
 
             self._registry[name] = path, view
-            for method, endpoint in self.route_payload(view, methods):
+            for method, endpoint in self.payload(view, methods):
                 payload = {
                     method: endpoint,
                     'extras': extras
@@ -83,7 +84,7 @@ class Routes(autoroutes.Routes):
             return view
         return routing
 
-    def match(self, method: str, path_info: str) -> Route:
+    def match(self, method: HTTPMethod, path_info: str) -> Route:
         methods, params = super().match(path_info)
         if methods is None:
             return None

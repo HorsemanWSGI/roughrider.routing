@@ -11,7 +11,5 @@ class RoutingNode(APINode):
     routes: Routes
     request_factory: Type[RoutingRequest]
 
-    __slots__ = ('routes', 'request_factory')
-
     def route(self, path: str, methods: list=None, **extras):
         return self.routes.register(path, methods, **extras)
