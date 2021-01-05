@@ -1,41 +1,10 @@
-import pytest
-import roughrider.routing.components
-import roughrider.routing.route
-import horseman.meta
-import horseman.http
-import horseman.response
 import http
 import autoroutes
 import webtest
-
-
-class MockOverhead(roughrider.routing.components.RoutingRequest):
-
-    def __init__(self, node, environ, route):
-        self.node = node
-        self.environ = environ
-        self.route = route
-        self._data = {}
-
-    def set_data(self, data):
-        self._data.update(data)
-
-    def get_data(self):
-        return self._data
-
-
-class MockRoutingNode(roughrider.routing.components.RoutingNode):
-
-    request_factory = MockOverhead
-
-    def __init__(self):
-        self.routes = roughrider.routing.route.Routes()
-
-    def resolve(self, path: str, environ: dict):
-        route = self.routes.match(environ['REQUEST_METHOD'], path)
-        if route is not None:
-            request = self.request_factory(self, environ, route)
-            return route.endpoint(request, **route.params)
+import pytest
+import horseman.meta
+import horseman.http
+import horseman.response
 
 
 def fake_route(request):
@@ -48,24 +17,22 @@ def failing_route(request):
 
 class TestRoutingNode:
 
-    def setup_method(self, method):
-        self.node = MockRoutingNode()
-        self.node.route('/getter', methods=['GET'])(fake_route)
-        self.node.route('/poster', methods=['POST'])(fake_route)
+    def test_resolve(self, node):
+        node.route('/getter', methods=['GET'])(fake_route)
 
-    def test_resolve(self):
         environ = {'REQUEST_METHOD': 'GET'}
-        result = self.node.resolve('/getter', environ)
+        result = node.resolve('/getter', environ)
         assert isinstance(result, horseman.response.Response)
 
         with pytest.raises(horseman.http.HTTPError) as exc:
-            self.node.resolve('/getter', {'REQUEST_METHOD': 'POST'})
+            node.resolve('/getter', {'REQUEST_METHOD': 'POST'})
 
         # METHOD UNALLOWED.
         assert exc.value.status == http.HTTPStatus(405)
 
-    def test_wsgi_roundtrip(self):
-        app = webtest.TestApp(self.node)
+    def test_wsgi_roundtrip(self, node):
+        node.route('/getter', methods=['GET'])(fake_route)
+        app = webtest.TestApp(node)
 
         response = app.get('/', status=404)
         assert response.body == b'Nothing matches the given URI'

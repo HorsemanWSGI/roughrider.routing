@@ -14,6 +14,39 @@ Endpoint = Callable[[Overhead], WSGICallable]
 HTTPMethods = List[HTTPMethod]
 
 
+def get_routables(view, methods: HTTPMethods = None) \
+    -> Generator[Tuple[HTTPMethod, Endpoint], None, None]:
+
+    def instance_members(inst):
+        if methods is not None:
+            raise AttributeError(
+                'Registration of APIView does not accept methods.')
+        members = inspect.getmembers(
+            inst, predicate=(lambda x: inspect.ismethod(x)
+                             and x.__name__ in METHODS))
+        for name, func in members:
+            yield name, func
+
+    if inspect.isclass(view):
+        inst = view()
+        if isinstance(inst, APIView):
+            yield from instance_members(inst)
+        else:
+            if methods is None:
+                methods = ['GET']
+            for method in methods:
+                yield method, inst.__call__
+    elif isinstance(view, APIView):
+        yield from instance_members(view)
+    elif inspect.isfunction(view):
+        if methods is None:
+            methods = ['GET']
+        for method in methods:
+            yield method, view
+    else:
+        raise ValueError(f'Unknown type of route: {view}.')
+
+
 class Route(NamedTuple):
     path: str
     method: HTTPMethod
@@ -41,28 +74,6 @@ class Routes(autoroutes.Routes):
             raise ValueError(
                 f"No route found with name {name} and params {params}")
 
-    @staticmethod
-    def payload(view, methods: HTTPMethods = None) \
-            -> Generator[Tuple[HTTPMethod, Endpoint], None, None]:
-        if inspect.isclass(view):
-            inst = view()
-            if isinstance(inst, APIView):
-                assert methods is None
-                members = inspect.getmembers(
-                    inst, predicate=(lambda x: inspect.ismethod(x)
-                                     and x.__name__ in METHODS))
-                for name, func in members:
-                    yield name, func
-            else:
-                assert methods is not None
-                for method in methods:
-                    yield method, inst.__call__
-        else:
-            if methods is None:
-                methods = ['GET']
-            for method in methods:
-                yield method, view
-
     def register(self, path: str, methods: HTTPMethods = None, **extras):
         def routing(view):
             name = extras.pop("name", view.__name__.lower())
@@ -74,7 +85,7 @@ class Routes(autoroutes.Routes):
                         f"Route with name {name} already exists: {ref}.")
 
             self._registry[name] = path, view
-            for method, endpoint in self.payload(view, methods):
+            for method, endpoint in get_routables(view, methods):
                 payload = {
                     method: endpoint,
                     'extras': extras
