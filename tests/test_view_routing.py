@@ -4,6 +4,10 @@ from horseman.meta import APIView
 from roughrider.routing.route import get_routables
 
 
+def view_func(request):
+    pass
+
+
 class SomeCallable:
 
     def __call__(self, request):

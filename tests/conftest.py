@@ -26,7 +26,7 @@ class MockRoutingNode(roughrider.routing.components.RoutingNode):
         self.routes = roughrider.routing.route.Routes()
 
     def resolve(self, path: str, environ: dict):
-        route = self.routes.match(environ['REQUEST_METHOD'], path)
+        route = self.routes.match_method(path, environ['REQUEST_METHOD'])
         if route is not None:
             request = self.request_factory(self, environ, route)
             return route.endpoint(request, **route.params)
