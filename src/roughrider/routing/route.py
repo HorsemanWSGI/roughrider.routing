@@ -69,9 +69,14 @@ class Route(NamedTuple):
 
 class Routes(autoroutes.Routes):
 
+    __slots__ = ('extractor')
+
+    def __init__(self, extractor=get_routables):
+        self.extractor = extractor
+
     def register(self, path: str, methods: HTTPMethods = None, **extras):
         def routing(view):
-            for method, endpoint in get_routables(view, methods):
+            for method, endpoint in self.extractor(view, methods):
                 payload = {
                     method: endpoint,
                     'extras': extras
@@ -124,8 +129,8 @@ class NamedRoutes(Routes):
 
     __slots__ = ('_registry')
 
-    def __init__(self):
-        super().__init__()
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
         self._registry = {}
 
     @property
@@ -153,7 +158,7 @@ class NamedRoutes(Routes):
     def register(self, path: str,
                  methods: HTTPMethods = None, name: str = None, **extras):
         def routing(view):
-            for method, endpoint in get_routables(view, methods):
+            for method, endpoint in self.extractor(view, methods):
                 payload = {
                     method: endpoint,
                     'extras': extras
