@@ -1,8 +1,6 @@
 import inspect
-import logging
-import re
-from typing import Callable, Generator, List, NamedTuple, Tuple
 from http import HTTPStatus
+from typing import Callable, Generator, List, NamedTuple, Tuple
 
 import autoroutes
 from horseman.definitions import METHODS
