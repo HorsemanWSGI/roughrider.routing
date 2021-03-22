@@ -135,14 +135,19 @@ class NamedRoutes(Routes):
     def names_mapping(self):
         return self._registry.items()
 
+    def has_route(self, name: str):
+        return name in self._registry
+
     def url_for(self, name: str, **params):
+        path = self._registry.get(name)
+        if path is None:
+            raise LookupError(f'Unknown route `{name}`.')
         try:
-            path = self._registry[name]
             # Raises a KeyError too if some param misses
             return path.format(**params)
         except KeyError:
             raise ValueError(
-                f"No route found with name {name} and params {params}")
+                f"No route found with name {name} and params {params}.")
 
     def add(self, path: str, **payload):
         if name := payload.get('name'):
