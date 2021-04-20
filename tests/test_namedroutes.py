@@ -51,6 +51,7 @@ def test_conflict_add_operation():
         router1 + router2
     assert str(exc.value) == "Route 'test' already exists for path '/test'."
 
+
 def test_merge_add_operation():
     router1 = NamedRoutes()
     router2 = NamedRoutes()
@@ -119,7 +120,6 @@ def test_add_operation_decorator_view_class():
     router1 = NamedRoutes()
     router2 = NamedRoutes()
 
-
     @router1.register('/view/{id}', name='my_view')
     @router2.register('/object_view/{oid}', name='object_view')
     class View(APIView):
@@ -132,7 +132,6 @@ def test_add_operation_decorator_view_class():
 
         def something_else(self):
             pass
-
 
     router3 = router1 + router2
     assert list(router3.names_mapping) == [
@@ -148,7 +147,7 @@ def test_add_operation_decorator_view_class():
                 'GET': hamcrest.has_property(
                     '__func__', hamcrest.is_(View.GET)),
                 'POST': hamcrest.has_property(
-                '__func__', hamcrest.is_(View.POST)),
+                    '__func__', hamcrest.is_(View.POST)),
             })
         }),
         hamcrest.has_properties({
@@ -205,11 +204,11 @@ def test_merge_add_operation_decorator_view_class():
                 'GET': hamcrest.has_property(
                     '__func__', hamcrest.is_(Browser.GET)),
                 'POST': hamcrest.has_property(
-                '__func__', hamcrest.is_(Browser.POST)),
+                    '__func__', hamcrest.is_(Browser.POST)),
                 'PUT': hamcrest.has_property(
                     '__func__', hamcrest.is_(REST.PUT)),
                 'PATCH': hamcrest.has_property(
-                '__func__', hamcrest.is_(REST.PATCH)),
+                    '__func__', hamcrest.is_(REST.PATCH)),
                 'DELETE': hamcrest.has_property(
                     '__func__', hamcrest.is_(REST.DELETE)),
             })

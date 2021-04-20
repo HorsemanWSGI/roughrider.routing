@@ -1,20 +1,20 @@
 import inspect
+import typing
 from http import HTTPStatus
-from typing import Callable, Generator, List, NamedTuple, Tuple
 
 import autoroutes
-from horseman.definitions import METHODS
-from horseman.prototyping import WSGICallable, HTTPMethod
+from horseman.types import WSGICallable, HTTPMethod
 from horseman.meta import Overhead, APIView
 from horseman.http import HTTPError
 
 
-Endpoint = Callable[[Overhead], WSGICallable]
-HTTPMethods = List[HTTPMethod]
+Endpoint = typing.Callable[[Overhead], WSGICallable]
+HTTPMethods = typing.List[HTTPMethod]
+METHODS = frozenset(typing.get_args(HTTPMethod))
 
 
 def get_routables(view, methods: HTTPMethods = None) \
-    -> Generator[Tuple[HTTPMethod, Endpoint], None, None]:
+      -> typing.Generator[typing.Tuple[HTTPMethod, Endpoint], None, None]:
 
     def instance_members(inst):
         if methods is not None:
@@ -52,12 +52,12 @@ def get_routables(view, methods: HTTPMethods = None) \
         raise ValueError(f'Unknown type of route: {view}.')
 
 
-class RouteDefinition(NamedTuple):
+class RouteDefinition(typing.NamedTuple):
     path: str
     payload: dict
 
 
-class Route(NamedTuple):
+class Route(typing.NamedTuple):
     path: str
     method: HTTPMethod
     endpoint: Endpoint
