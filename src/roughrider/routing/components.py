@@ -1,5 +1,5 @@
 from typing import Type
-from horseman.meta import Overhead, APINode
+from horseman.meta import Overhead, Node
 from roughrider.routing.route import Routes, Route
 
 
@@ -7,7 +7,7 @@ class RoutingRequest(Overhead):
     route: Route
 
 
-class RoutingNode(APINode):
+class RoutingNode(Node):
     routes: Routes
     request_factory: Type[RoutingRequest]
 
