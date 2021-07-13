@@ -9,7 +9,7 @@ def test_resolve(node):
 
     @node.route('/getter', methods=['GET'])
     def fake_route(request):
-        return horseman.response.Response.create(200, body=b'OK !')
+        return horseman.response.Response(200, body=b'OK !')
 
     environ = {'REQUEST_METHOD': 'GET'}
     result = node.resolve('/getter', environ)
@@ -30,7 +30,7 @@ def test_wsgi_roundtrip(node):
 
     @node.route('/getter', methods=['GET'])
     def fake_route(request):
-        return horseman.response.Response.create(200, body=b'OK !')
+        return horseman.response.Response(200, body=b'OK !')
 
     response = app.get('/getter')
     assert response.body == b'OK !'

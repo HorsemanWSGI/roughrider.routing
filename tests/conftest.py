@@ -11,11 +11,8 @@ class MockOverhead(roughrider.routing.components.RoutingRequest):
         self.route = route
         self._data = {}
 
-    def set_data(self, data):
-        self._data.update(data)
-
-    def get_data(self):
-        return self._data
+    def extract(self):
+        pass
 
 
 class MockRoutingNode(roughrider.routing.components.RoutingNode):
