@@ -1,5 +1,5 @@
 import inspect
-import typing
+import typing as t
 from http import HTTPStatus
 
 import autoroutes
@@ -8,13 +8,13 @@ from horseman.meta import Overhead, APIView
 from horseman.http import HTTPError
 
 
-Endpoint = typing.Callable[[Overhead], WSGICallable]
-HTTPMethods = typing.List[HTTPMethod]
-METHODS = frozenset(typing.get_args(HTTPMethod))
+Endpoint = t.Callable[[Overhead], WSGICallable]
+HTTPMethods = t.List[HTTPMethod]
+METHODS = frozenset(t.get_args(HTTPMethod))
 
 
 def get_routables(view, methods: HTTPMethods = None) \
-      -> typing.Generator[typing.Tuple[HTTPMethod, Endpoint], None, None]:
+      -> t.Generator[t.Tuple[HTTPMethod, Endpoint], None, None]:
 
     def instance_members(inst):
         if methods is not None:
@@ -52,17 +52,24 @@ def get_routables(view, methods: HTTPMethods = None) \
         raise ValueError(f'Unknown type of route: {view}.')
 
 
-class RouteDefinition(typing.NamedTuple):
-    path: str
-    payload: dict
-
-
-class Route(typing.NamedTuple):
-    path: str
+class RouteEndpoint(t.NamedTuple):
     method: HTTPMethod
     endpoint: Endpoint
+    metadata: t.Optional[t.Dict[t.Any, t.Any]] = None
+
+    def __call__(self, *args, **kwargs):
+        return self.endpoint(*args, **kwargs)
+
+
+class RouteDefinition(t.NamedTuple):
+    path: str
+    payload: t.Dict[HTTPMethod, RouteEndpoint]
+
+
+class Route(t.NamedTuple):
+    path: str
+    endpoint: RouteEndpoint
     params: dict
-    extras: dict
 
 
 class Routes(autoroutes.Routes):
@@ -72,19 +79,23 @@ class Routes(autoroutes.Routes):
     def __init__(self, extractor=get_routables):
         self.extractor = extractor
 
-    def register(self, path: str, methods: HTTPMethods = None, **extras):
+    def add(self, path: str, payload: t.Dict[HTTPMethod, RouteEndpoint]):
+        super().add(path, **payload)
+
+    def register(self, path: str, methods: HTTPMethods = None, **metadata):
         def routing(view):
-            for method, endpoint in self.extractor(view, methods):
-                payload = {
-                    method: endpoint,
-                    'extras': extras
-                }
-                self.add(path, **payload)
+            self.add(path, {
+                method: RouteEndpoint(
+                    endpoint=endpoint,
+                    method=method,
+                    metadata=metadata or None
+                ) for method, endpoint in self.extractor(view, methods)
+            })
             return view
         return routing
 
     def match_method(self, path_info: str, method: HTTPMethod) -> Route:
-        found, params = super().match(path_info)
+        found, params = self.match(path_info)
         if found is None:
             return None
         endpoint = found.get(method)
@@ -93,10 +104,8 @@ class Routes(autoroutes.Routes):
 
         return Route(
             path=path_info,
-            method=method,
-            endpoint=endpoint,
             params=params,
-            extras=found.get('extras', {})
+            endpoint=endpoint,
         )
 
     def __iter__(self):
@@ -117,29 +126,29 @@ class Routes(autoroutes.Routes):
                 "and '{router.__class__}'")
         routes = self.__class__()
         for routedef in self:
-            routes.add(routedef.path, **routedef.payload)
+            routes.add(routedef.path, routedef.payload)
         for routedef in router:
-            routes.add(routedef.path, **routedef.payload)
+            routes.add(routedef.path, routedef.payload)
         return routes
 
 
 class NamedRoutes(Routes):
 
-    __slots__ = ('_registry')
+    __slots__ = ('_names')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self._registry = {}
+        self._names = {}
 
     @property
     def names_mapping(self):
-        return self._registry.items()
+        return self._names.items()
 
     def has_route(self, name: str):
-        return name in self._registry
+        return name in self._names
 
     def url_for(self, name: str, **params):
-        path = self._registry.get(name)
+        path = self._names.get(name)
         if path is None:
             raise LookupError(f'Unknown route `{name}`.')
         try:
@@ -149,25 +158,13 @@ class NamedRoutes(Routes):
             raise ValueError(
                 f"No route found with name {name} and params {params}.")
 
-    def add(self, path: str, **payload):
-        if name := payload.get('name'):
-            if found := self._registry.get(name):
-                if found != path:
+    def add(self, path: str, payload: t.Dict[HTTPMethod, RouteEndpoint]):
+        for verb, endpoint in payload.items():
+            if not endpoint.metadata or not 'name' in endpoint.metadata:
+                continue
+            if found := self._names.get(endpoint.metadata['name']):
+                if path != found:
                     raise NameError(
-                        f"Route '{name}' already exists for path '{found}'.")
-            self._registry[name] = path
-        return super().add(path, **payload)
-
-    def register(self, path: str,
-                 methods: HTTPMethods = None, name: str = None, **extras):
-        def routing(view):
-            for method, endpoint in self.extractor(view, methods):
-                payload = {
-                    method: endpoint,
-                    'extras': extras
-                }
-                if name:
-                    payload['name'] = name
-                self.add(path, **payload)
-            return view
-        return routing
+                        f"Route {name!r} already exists for path {found!r}.")
+            self._names[endpoint.metadata['name']] = path
+        return super().add(path, payload)

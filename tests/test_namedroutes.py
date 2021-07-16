@@ -1,69 +1,6 @@
 import pytest
-from roughrider.routing.route import NamedRoutes, RouteDefinition
-
-
-def test_naming():
-    router = NamedRoutes()
-    router.add('/test', name='test')
-    assert list(router) == [
-        RouteDefinition(path='/test', payload={'name': 'test'}),
-    ]
-
-    router.add('/test', name='test2')
-    assert list(router) == [
-        RouteDefinition(path='/test', payload={'name': 'test2'}),
-    ]
-
-    assert list(router.names_mapping) == [
-        ('test', '/test'),
-        ('test2', '/test')
-    ]
-
-    with pytest.raises(NameError) as exc:
-        router.add('/test2', name='test2')
-    assert str(exc.value) == "Route 'test2' already exists for path '/test'."
-
-
-def test_basic_add_operation():
-    router1 = NamedRoutes()
-    router2 = NamedRoutes()
-
-    router1.add('/test', name='test')
-    router2.add('/test2')
-    router3 = router1 + router2
-    assert list(router3) == [
-        RouteDefinition(path='/test', payload={'name': 'test'}),
-        RouteDefinition(path='/test2', payload={}),
-    ]
-    assert list(router3.names_mapping) == [
-        ('test', '/test'),
-    ]
-
-
-def test_conflict_add_operation():
-    router1 = NamedRoutes()
-    router2 = NamedRoutes()
-
-    router1.add('/test', name='test')
-    router2.add('/test2', name='test')
-
-    with pytest.raises(NameError) as exc:
-        router1 + router2
-    assert str(exc.value) == "Route 'test' already exists for path '/test'."
-
-
-def test_merge_add_operation():
-    router1 = NamedRoutes()
-    router2 = NamedRoutes()
-
-    router1.add('/test', name='test')
-    router2.add('/test', name='test2')
-    router3 = router1 + router2
-
-    assert list(router3.names_mapping) == [
-        ('test', '/test'),
-        ('test2', '/test'),
-    ]
+from roughrider.routing.route import (
+    NamedRoutes, RouteDefinition, RouteEndpoint)
 
 
 def test_merge_add_operation_decorator():
@@ -105,10 +42,16 @@ def test_merge_add_operation_decorator_diff_names():
     # WARNING : the route payload will be updated to the LAST name.
     assert list(router3) == [
         RouteDefinition(path='/test', payload={
-            'GET': obj_get,
-            'POST': obj_post,
-            'name': 'post_obj',
-            'extras': {}
+            'GET': RouteEndpoint(
+                method='GET',
+                endpoint=obj_get,
+                metadata={"name": "get_obj"}
+            ),
+            'POST': RouteEndpoint(
+                method='POST',
+                endpoint=obj_post,
+                metadata={"name": "post_obj"}
+            )
         }),
     ]
 
@@ -143,23 +86,41 @@ def test_add_operation_decorator_view_class():
         hamcrest.has_properties({
             'path': '/view/{id}',
             'payload': hamcrest.has_entries({
-                'name': 'my_view',
-                'GET': hamcrest.has_property(
-                    '__func__', hamcrest.is_(View.GET)),
-                'POST': hamcrest.has_property(
-                    '__func__', hamcrest.is_(View.POST)),
+                'GET': hamcrest.contains_exactly(
+                    'GET',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(View.GET)
+                    ),
+                    {"name": "my_view"}
+                ),
+                'POST': hamcrest.contains_exactly(
+                    'POST',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(View.POST)
+                    ),
+                    {"name": "my_view"}
+                ),
             })
         }),
         hamcrest.has_properties({
             'path': '/object_view/{oid}',
             'payload': hamcrest.has_entries({
-                'name': 'object_view',
-                'GET': hamcrest.has_property(
-                    '__func__', hamcrest.is_(View.GET)),
-                'POST': hamcrest.has_property(
-                    '__func__', hamcrest.is_(View.POST)),
+                'GET': hamcrest.contains_exactly(
+                    'GET',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(View.GET)
+                    ),
+                    {"name": "object_view"}
+                ),
+                'POST': hamcrest.contains_exactly(
+                    'POST',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(View.POST)
+                    ),
+                    {"name": "object_view"}
+                ),
             })
-        })
+        }),
     ))
 
 
@@ -179,7 +140,7 @@ def test_merge_add_operation_decorator_view_class():
         def POST(request):
             pass
 
-    @router2.register('/item/{id}')
+    @router2.register('/item/{id}', name="crud")
     class REST(APIView):
 
         def PUT(request):
@@ -194,23 +155,48 @@ def test_merge_add_operation_decorator_view_class():
     router3 = router1 + router2
     assert list(router3.names_mapping) == [
         ('item', '/item/{id}'),
+        ('crud', '/item/{id}'),
     ]
 
     hamcrest.assert_that(list(router3), hamcrest.contains_exactly(
         hamcrest.has_properties({
             'path': '/item/{id}',
             'payload': hamcrest.has_entries({
-                'name': 'item',
-                'GET': hamcrest.has_property(
-                    '__func__', hamcrest.is_(Browser.GET)),
-                'POST': hamcrest.has_property(
-                    '__func__', hamcrest.is_(Browser.POST)),
-                'PUT': hamcrest.has_property(
-                    '__func__', hamcrest.is_(REST.PUT)),
-                'PATCH': hamcrest.has_property(
-                    '__func__', hamcrest.is_(REST.PATCH)),
-                'DELETE': hamcrest.has_property(
-                    '__func__', hamcrest.is_(REST.DELETE)),
+                'GET': hamcrest.contains_exactly(
+                    'GET',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(Browser.GET)
+                    ),
+                    {"name": "item"}
+                ),
+                'POST': hamcrest.contains_exactly(
+                    'POST',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(Browser.POST)
+                    ),
+                    {"name": "item"}
+                ),
+                'PUT': hamcrest.contains_exactly(
+                    'PUT',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(REST.PUT)
+                    ),
+                    {"name": "crud"}
+                ),
+                'PATCH': hamcrest.contains_exactly(
+                    'PATCH',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(REST.PATCH)
+                    ),
+                    {"name": "crud"}
+                ),
+                'DELETE': hamcrest.contains_exactly(
+                    'DELETE',
+                    hamcrest.has_property(
+                        '__func__', hamcrest.is_(REST.DELETE)
+                    ),
+                    {"name": "crud"}
+                )
             })
         })
     ))
