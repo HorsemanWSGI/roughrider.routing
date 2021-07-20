@@ -9,12 +9,12 @@ from horseman.http import HTTPError
 
 
 Endpoint = t.Callable[[Overhead], WSGICallable]
-HTTPMethods = t.List[HTTPMethod]
+HTTPMethods = t.Iterable[HTTPMethod]
 METHODS = frozenset(t.get_args(HTTPMethod))
 
 
-def get_routables(view, methods: HTTPMethods = None) \
-      -> t.Generator[t.Tuple[HTTPMethod, Endpoint], None, None]:
+def get_routables(view, methods: t.Optional[HTTPMethods] = None) \
+      -> t.Iterator[t.Tuple[Endpoint, HTTPMethods]]:
 
     def instance_members(inst):
         if methods is not None:
@@ -24,7 +24,7 @@ def get_routables(view, methods: HTTPMethods = None) \
             inst, predicate=(lambda x: inspect.ismethod(x)
                              and x.__name__ in METHODS))
         for name, func in members:
-            yield name, func
+            yield func, [name]
 
     if inspect.isclass(view):
         inst = view()
@@ -33,21 +33,22 @@ def get_routables(view, methods: HTTPMethods = None) \
         else:
             if methods is None:
                 methods = ['GET']
-            for method in methods:
-                if method not in METHODS:
-                    raise ValueError(
-                        f"'{method}' is not a known HTTP method.")
-                yield method, inst.__call__
+
+            unknown = set(methods) - METHODS
+            if unknown:
+                raise ValueError(
+                    f"Unknown HTTP method(s): {', '.join(unknown)}")
+            yield inst.__call__, methods
     elif isinstance(view, APIView):
         yield from instance_members(view)
     elif inspect.isfunction(view):
         if methods is None:
             methods = ['GET']
-        for method in methods:
-            if method not in METHODS:
-                raise ValueError(
-                    f"'{method}' is not a known HTTP method.")
-            yield method, view
+        unknown = set(methods) - METHODS
+        if unknown:
+            raise ValueError(
+                f"Unknown HTTP method(s): {', '.join(unknown)}")
+        yield view, methods
     else:
         raise ValueError(f'Unknown type of route: {view}.')
 
@@ -84,13 +85,14 @@ class Routes(autoroutes.Routes):
 
     def register(self, path: str, methods: HTTPMethods = None, **metadata):
         def routing(view):
-            self.add(path, {
-                method: RouteEndpoint(
-                    endpoint=endpoint,
-                    method=method,
-                    metadata=metadata or None
-                ) for method, endpoint in self.extractor(view, methods)
-            })
+            for endpoint, methods in self.extractor(view, methods):
+                self.add(path, {
+                    method: RouteEndpoint(
+                        endpoint=endpoint,
+                        method=method,
+                        metadata=metadata or None
+                    ) for method in methods
+                })
             return view
         return routing
 
