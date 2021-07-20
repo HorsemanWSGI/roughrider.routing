@@ -85,13 +85,13 @@ class Routes(autoroutes.Routes):
 
     def register(self, path: str, methods: HTTPMethods = None, **metadata):
         def routing(view):
-            for endpoint, methods in self.extractor(view, methods):
+            for endpoint, verbs in self.extractor(view, methods):
                 self.add(path, {
                     method: RouteEndpoint(
                         endpoint=endpoint,
                         method=method,
                         metadata=metadata or None
-                    ) for method in methods
+                    ) for method in verbs
                 })
             return view
         return routing
