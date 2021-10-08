@@ -1,7 +1,7 @@
 import hamcrest
 import pytest
 from horseman.meta import APIView
-from roughrider.routing.route import get_routables
+from roughrider.routing.utils import get_routables
 
 
 def view_func(request):

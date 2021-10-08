@@ -7,7 +7,7 @@ import horseman.response
 
 def test_resolve(node):
 
-    @node.route('/getter', methods=['GET'])
+    @node.routes.register('/getter', methods=['GET'])
     def fake_route(request):
         return horseman.response.Response(200, body=b'OK !')
 
@@ -28,7 +28,7 @@ def test_wsgi_roundtrip(node):
     response = app.get('/getter', status=404)
     assert response.body == b'Nothing matches the given URI'
 
-    @node.route('/getter', methods=['GET'])
+    @node.routes.register('/getter', methods=['GET'])
     def fake_route(request):
         return horseman.response.Response(200, body=b'OK !')
 

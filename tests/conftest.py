@@ -1,9 +1,9 @@
 import pytest
-import roughrider.routing.components
-import roughrider.routing.route
+from horseman.meta import Overhead, Node
+from roughrider.routing.components import Routes
 
 
-class MockOverhead(roughrider.routing.components.RoutingRequest):
+class MockOverhead(Overhead):
 
     def __init__(self, node, environ, route):
         self.node = node
@@ -15,17 +15,15 @@ class MockOverhead(roughrider.routing.components.RoutingRequest):
         pass
 
 
-class MockRoutingNode(roughrider.routing.components.RoutingNode):
-
-    request_factory = MockOverhead
+class MockRoutingNode(Node):
 
     def __init__(self):
-        self.routes = roughrider.routing.route.Routes()
+        self.routes = Routes()
 
     def resolve(self, path: str, environ: dict):
         route = self.routes.match_method(path, environ['REQUEST_METHOD'])
         if route is not None:
-            request = self.request_factory(self, environ, route)
+            request = MockOverhead(self, environ, route)
             return route.endpoint(request, **route.params)
 
 

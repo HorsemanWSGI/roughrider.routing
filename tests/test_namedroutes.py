@@ -1,6 +1,6 @@
 import pytest
-from roughrider.routing.route import (
-    NamedRoutes, RouteDefinition, RouteEndpoint)
+from roughrider.routing.meta import RouteDefinition, RouteEndpoint
+from roughrider.routing.components import NamedRoutes
 
 
 def test_merge_add_operation_decorator():

@@ -1,4 +1,5 @@
-from roughrider.routing.route import Routes, RouteDefinition, RouteEndpoint
+from roughrider.routing.components import Routes
+from roughrider.routing.meta import RouteDefinition, RouteEndpoint
 
 
 def test_merge_method_registration_operation():
