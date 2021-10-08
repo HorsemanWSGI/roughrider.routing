@@ -14,8 +14,8 @@ Example
 Below is an example of a barebone API, handling a GET request on '/'
 and returning a JSON response.
 
-
 .. code-block:: python
+
   import logging
   from bjoern import run
   from horseman.meta import SentryNode, Overhead, APIView
@@ -39,11 +39,11 @@ and returning a JSON response.
       def __init__(self):
           self.routes = Routes()
 
-    def resolve(self, path: str, environ: dict):
-        route = self.routes.match_method(path, environ['REQUEST_METHOD'])
-        if route is not None:
-            request = Request(environ)
-            return route.endpoint(request, **route.params)
+      def resolve(self, path: str, environ: dict):
+          route = self.routes.match_method(path, environ['REQUEST_METHOD'])
+          if route is not None:
+              request = Request(environ)
+              return route.endpoint(request, **route.params)
 
       def handle_exception(self, exc_info, environ):
           logging.error(exc_info)
