@@ -1,2 +1,0 @@
--e git+git@github.com:HorsemanWSGI/horseman.git#egg=horseman
--e .
