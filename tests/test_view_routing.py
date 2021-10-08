@@ -34,8 +34,9 @@ def test_simple_class_payload():
     hamcrest.assert_that(
         payload, hamcrest.contains_exactly(
             hamcrest.contains_exactly(
-                'GET', hamcrest.has_property(
-                    '__func__', hamcrest.is_(SomeCallable.__call__))
+                hamcrest.has_property(
+                    '__func__', hamcrest.is_(SomeCallable.__call__)),
+                ['GET']
             ),
         )
     )
@@ -44,8 +45,9 @@ def test_simple_class_payload():
     hamcrest.assert_that(
         payload, hamcrest.contains_exactly(
             hamcrest.contains_exactly(
-                'POST', hamcrest.has_property(
-                    '__func__', hamcrest.is_(SomeCallable.__call__))
+                hamcrest.has_property(
+                    '__func__', hamcrest.is_(SomeCallable.__call__)),
+                ['POST']
             ),
         )
     )
@@ -54,12 +56,9 @@ def test_simple_class_payload():
     hamcrest.assert_that(
         payload, hamcrest.contains_exactly(
             hamcrest.contains_exactly(
-                'DELETE', hamcrest.has_property(
-                    '__func__', hamcrest.is_(SomeCallable.__call__))
-            ),
-            hamcrest.contains_exactly(
-                'POST', hamcrest.has_property(
-                    '__func__', hamcrest.is_(SomeCallable.__call__))
+                hamcrest.has_property(
+                    '__func__', hamcrest.is_(SomeCallable.__call__)),
+                ['DELETE', 'POST']
             ),
         )
     )
@@ -80,16 +79,19 @@ def test_view_class_payload():
     hamcrest.assert_that(
         payload, hamcrest.contains_exactly(
             hamcrest.contains_exactly(
-                'GET', hamcrest.has_property(
-                    '__func__', hamcrest.is_(View.GET))
+                hamcrest.has_property(
+                    '__func__', hamcrest.is_(View.GET)),
+                ['GET'],
             ),
             hamcrest.contains_exactly(
-                'HEAD', hamcrest.has_property(
-                    '__func__', hamcrest.is_(View.HEAD))
+                hamcrest.has_property(
+                    '__func__', hamcrest.is_(View.HEAD)),
+                ['HEAD']
             ),
             hamcrest.contains_exactly(
-                'POST', hamcrest.has_property(
-                    '__func__', hamcrest.is_(View.POST))
+                hamcrest.has_property(
+                    '__func__', hamcrest.is_(View.POST)),
+                ['POST']
             ),
         )
     )
@@ -106,9 +108,9 @@ def test_view_instance_payload():
     payload = list(get_routables(inst))
     hamcrest.assert_that(
         payload, hamcrest.contains_exactly(
-            ('GET', inst.GET),
-            ('HEAD', inst.HEAD),
-            ('POST', inst.POST)
+            (inst.GET, ['GET']),
+            (inst.HEAD, ['HEAD']),
+            (inst.POST, ['POST'])
         )
     )
 
