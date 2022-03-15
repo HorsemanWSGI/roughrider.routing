@@ -102,9 +102,10 @@ class NamedRoutes(Routes):
         for verb, endpoint in payload.items():
             if not endpoint.metadata or not 'name' in endpoint.metadata:
                 continue
-            if found := self._names.get(endpoint.metadata['name']):
+            name = endpoint.metadata['name']
+            if found := self._names.get(name):
                 if path != found:
                     raise NameError(
                         f"Route {name!r} already exists for path {found!r}.")
-            self._names[endpoint.metadata['name']] = path
+            self._names[name] = path
         return super().add(path, payload)

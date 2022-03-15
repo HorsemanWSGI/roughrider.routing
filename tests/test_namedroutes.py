@@ -3,6 +3,21 @@ from roughrider.routing.meta import RouteDefinition, RouteEndpoint
 from roughrider.routing.components import NamedRoutes
 
 
+def test_add_duplicated_name():
+    router = NamedRoutes()
+
+    @router.register('/view', methods=['GET'], name="index")
+    def obj_view(request):
+        pass
+
+    with pytest.raises(NameError) as exc:
+        @router.register('/create', methods=['POST'], name="index")
+        def obj_create(request):
+            pass
+
+    assert str(exc.value) == "Route 'index' already exists for path '/view'."
+
+
 def test_merge_add_operation_decorator():
     router1 = NamedRoutes()
     router2 = NamedRoutes()
